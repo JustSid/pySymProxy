@@ -31,14 +31,15 @@ class SymbolHandler:
             logging.info("get: {}/{}/{} client: {}".format(file, identifier, rawfile, req.remote_addr))
 
             # Match against list of exclusions
-            if file != rawfile:
-                valid = False
-                raise Exception("Requested file ignored. Compression and file redirection disabled");
-
-            # Match against list of exclusions
             if any(regex.match(file) for regex in self._blacklist):
                 excluded = True
                 raise Exception("Matched exclusion pattern")
+
+            # Match against list of exclusions
+            if file != rawfile:
+                valid = False
+                raise Exception("Requested file ignored. Compression and file redirection disabled")
+
 
             # Check if we already have a cached record for this request
             recordId = file + "/" + identifier
@@ -73,14 +74,14 @@ class SymbolHandler:
             if symbolLocation is not None:
                 logging.info("response: {}".format(symbolLocation))
                 resp.stream = open(symbolLocation, 'rb')
-                resp.stream_len = os.path.getsize(symbolLocation)
+                resp.content_length = os.path.getsize(symbolLocation)
                 resp.content_type = "application/octet-stream"
             else:
                 raise Exception("Unable to find file across the servers")
 
         except Exception as e:
             logging.error("{}".format(str(e)))
-            resp.body = "404 could not find requested file.\nError: " + str(e)
+            resp.text = "404 could not find requested file.\nError: " + str(e)
             resp.status = falcon.HTTP_404
 
         self._statistics.endRequest(statRecord, file, identifier, symbolLocation, cacheHit, excluded, valid,

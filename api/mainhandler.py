@@ -53,13 +53,13 @@ class MainHandler:
             elif (file.endswith(".log")):
                 return self.on_get_logfile(req, resp, file)
         except Exception as e:
-            resp.body = "error: " + str(e)
+            resp.text = "error: " + str(e)
 
     def on_get_index(self, req, resp):
         diskUsage = 0  # sum([getFolderSize(server.get("cacheLocation", None)) for server in self._config.servers()])
         diskUsage += getFolderSize(self._config.cacheLocation())
         self._template = env.get_template('main.html.jinja')
-        resp.body = self._template.render(
+        resp.text = self._template.render(
             serverName=self._config.name(),
             admin=self._config.administrator(),
             clientConfig=self._config.sympath(),
@@ -74,7 +74,7 @@ class MainHandler:
     def on_get_config(self, req, resp):
         configLocation = self._config.configFile()
         resp.stream = open(configLocation, 'rb')
-        resp.stream_len = os.path.getsize(configLocation)
+        resp.content_length = os.path.getsize(configLocation)
         resp.content_type = "json"
 
     def on_get_statistics(self, req, resp):
@@ -85,7 +85,7 @@ class MainHandler:
         stats.diskUsage += getFolderSize(self._config.cacheLocation())
         stats.numAcceptedRequests = stats.numRequests.value - stats.numExcluded.value
 
-        resp.data = JsonEncoder().encode(stats)
+        resp.data = JsonEncoder().encode(stats).encode('utf-8')
         resp.content_type = "json"
 
     def on_get_symbols(self, req, resp):
@@ -93,7 +93,7 @@ class MainHandler:
         # Serialise it and send
         symbols = self._statistics.getSymbols()
 
-        resp.data = JsonEncoder().encode(symbols)
+        resp.data = JsonEncoder().encode(symbols).encode('utf-8')
         resp.content_type = "json"
 
     def on_get_logfile(self, req, resp, file):
@@ -103,5 +103,5 @@ class MainHandler:
 
         logLocation = logfiles[logIndex - 1]
         resp.stream = open(logLocation, 'rb')
-        resp.stream_len = os.path.getsize(logLocation)
+        resp.content_length = os.path.getsize(logLocation)
         resp.content_type = "text"
